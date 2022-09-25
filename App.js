@@ -2,6 +2,7 @@ import { Text, View, PermissionsAndroid, Alert, TouchableOpacity, Image , Native
 import React, { Component } from 'react'
 import BackgroundTaskService from './BackgroundTaskService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Geolocation from 'react-native-geolocation-service';
 const { AudioHandler } = NativeModules;
 export class App extends Component {
   constructor(props) {
@@ -32,6 +33,19 @@ export class App extends Component {
       const value = await AsyncStorage.getItem('@storage_Key')
       if (value !== null) {
         return false;
+      } else {
+        return true;
+      }
+    } catch (e) {
+    }
+  }
+
+  getDataX = async () => {
+    try {
+      const value = await AsyncStorage.getItem('@WATCH_ID')
+      if (value !== null) {
+        console.log(value)
+        Geolocation.clearWatch(parseInt(value));
       } else {
         return true;
       }
@@ -122,10 +136,12 @@ export class App extends Component {
             text: 'Yes', onPress: async () => {
               await this.removeValue()
               BackgroundTaskService.stop();
+              this.getDataX()
               AudioHandler.unMuteDevice('x', 'y')
               this.setState({
                 statusX: 1
               })
+             
             }
           },
         ],

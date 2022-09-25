@@ -182,7 +182,6 @@ var status = -1;
 const checkInside = (x) => {
   return data.map(async (i, j) => {
     var check = inside(x, i)
-    console.log(check)
     if (check == true && status == -1) {
       console.log('mute device')
       AudioHandler.muteDevice('x', 'y')
@@ -200,10 +199,20 @@ const checkInside = (x) => {
   )
 }
 
+storeData = async (value) => {
+  try {
+    await AsyncStorage.setItem('@WATCH_ID', value)
+  } catch (e) {
+    console.log(e)
+  }
+}
+
 const increaseCountTask = async taskDataArguments => {
+  console.log('hi')
   const { delay } = taskDataArguments;
+  status = -1;
   await new Promise(async (resolve) => {
-    Geolocation.watchPosition(
+ var watchID = Geolocation.watchPosition(
       (position) => {
         checkInside([position.coords.longitude, position.coords.latitude])
       },
@@ -213,12 +222,14 @@ const increaseCountTask = async taskDataArguments => {
           android: 'balanced',
           ios: 'best',
         },
-        enableHighAccuracy: false,
+        enableHighAccuracy: true,
         distanceFilter: 10,
-        
       },
     )
+    console.log(watchID)
+    storeData(`${watchID}`);
   });
+
 }
 
 const options = {
