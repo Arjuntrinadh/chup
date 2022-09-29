@@ -1,4 +1,4 @@
-import { Text, View, PermissionsAndroid, Alert, TouchableOpacity, Image , NativeModules } from 'react-native'
+import { Text, View, PermissionsAndroid, Alert, TouchableOpacity, Image, NativeModules, ScrollView } from 'react-native'
 import React, { Component } from 'react'
 import BackgroundTaskService from './BackgroundTaskService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,7 +9,8 @@ export class App extends Component {
     super(props)
     this.state = {
       data: null,
-      statusX: 1
+      statusX: 1,
+      resText:null
     }
   }
   removeValue = async () => {
@@ -63,16 +64,25 @@ export class App extends Component {
         }
       )
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-
-        var output = await this.getData();
-        if (output == true) {
+        var x = await AudioHandler.getPermission();
+        console.log(x)
+        if (x == true) {
+          var output = await this.getData();
+          if (output == true) {
+            this.setState({
+              statusX: 10
+            })
+          }
+          else {
+            this.setState({
+              statusX: 5
+            })
+          }
+        } else {
+          console.log("Notification permission denied")
+          alert("Notification permission denied");
           this.setState({
-            statusX: 10
-          })
-        }
-        else {
-          this.setState({
-            statusX: 5
+            statusX: -1
           })
         }
       } else {
@@ -111,8 +121,23 @@ export class App extends Component {
     }
   }
 
+  getTriggerInfo = async () => {
+    try {
+      const value = await AsyncStorage.getItem('@trigger')
+      console.log(value)
+      var res = JSON.parse(value)
+      this.setState({
+        resText: res
+      })
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
   componentDidMount() {
+    this.getTriggerInfo();
     this.permissionCheck()
+
   }
 
   hero = async () => {
@@ -141,7 +166,7 @@ export class App extends Component {
               this.setState({
                 statusX: 1
               })
-             
+
             }
           },
         ],
@@ -151,18 +176,73 @@ export class App extends Component {
     }
   }
 
+  resetTriggers = async() => {
+    try {
+      await AsyncStorage.removeItem('@trigger')
+      this.setState({
+        resText:null
+      })
+    } catch (e) {
+      alert('restart the app')
+    }
+  }
+
+  outputInfo = () => {
+    if(this.state.resText != null){
+      return(
+        this.state.resText.map((i,j)=>{
+          return(
+            <View key={j} style={{ width:"100%",height:60,flexDirection:"row",justifyContent:"space-between"}} >
+              <View style={{width:"45%",justifyContent:"center",alignItems:"center"}}>
+                <Text style={{color:"black",fontWeight:"bold",color:"#00aaff"}}>
+                  {i.time}
+                </Text>
+              </View>
+              <View style={{width:"45%",justifyContent:"center",alignItems:"center"}}>
+                <Text style={{color:"black",fontWeight:"bold",color:"#00ffff"}}>
+                  {i.status}
+                </Text>
+              </View>
+            </View>
+          )
+        })
+      )
+    }
+  }
   // BackgroundTaskService.start()
   // BackgroundTaskService.stop()
   render() {
     return (
-      <View style={{ backgroundColor: "#000", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>
-        <TouchableOpacity onPress={() => this.hero()}>
+      <ScrollView style={{ backgroundColor: "#000", width: "100%"}}>
+        <TouchableOpacity style={{alignSelf:"center",marginTop:30}} onPress={() => this.hero()}>
           <Image source={this.state.statusX == 5 ? require('./asseets/off.png') : require('./asseets/on.png')} style={{ width: 140, height: 200 }} />
         </TouchableOpacity>
-        <Text style={{ color: "white", textAlign: "center" }}>
-         {this.state.statusX == 5 ? "OFF THE SERVICE" : "ON THE SERVICE"} 
+        <Text style={{ color: "#fff", textAlign: "center", fontWeight:"bold" }}>
+          {this.state.statusX == 5 ? "OFF THE SERVICE" : "ON THE SERVICE"}
         </Text>
-      </View>
+        <View style={{width:"85%",minHeight:400,marginBottom:20,borderRadius:12,elevation:6,backgroundColor:"#0f0f0f",marginTop:20,alignSelf:"center"}}>
+            <View style={{ width:"100%",height:60,flexDirection:"row",justifyContent:"space-between"}} >
+              <View style={{width:"45%",justifyContent:"center",alignItems:"center"}}>
+                <Text style={{color:"black",fontWeight:"bold",color:"#00aaff"}}>
+                  Time
+                </Text>
+              </View>
+              <View style={{width:"45%",justifyContent:"center",alignItems:"center"}}>
+                <Text style={{color:"black",fontWeight:"bold",color:"#00ffff"}}>
+                  Action
+                </Text>
+              </View>
+            </View>
+            {this.outputInfo()}
+        </View>
+        <TouchableOpacity onPress={() => {
+          this.resetTriggers()
+        }} style={{width:"50%",justifyContent:"center",alignItems:"center",borderRadius:30,elevation:12,height:60,backgroundColor:"#00aaff",alignSelf:"center",marginBottom:40}}>
+          <Text style={{fontWeight:"bold",fontSize:16}}>
+            Reset Data
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     )
   }
 }
